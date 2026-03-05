@@ -3,12 +3,12 @@ import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
 import Razorpay from "razorpay";
+import { WORKSHOP_CONFIG } from "./src/config/workshop";
 
 dotenv.config();
 
 const app = express();
 const port = Number(process.env.PORT ?? 8787);
-const allowedAmount = 9900; // Rs. 99 in paise.
 
 const razorpayKeyId = process.env.RAZORPAY_KEY_ID;
 const razorpayKeySecret = process.env.RAZORPAY_KEY_SECRET;
@@ -27,15 +27,13 @@ app.use(express.json());
 
 app.post("/api/create-order", async (req, res) => {
   try {
-    const currency = typeof req.body.currency === "string" ? req.body.currency : "INR";
-    const receipt = `rcpt_${Date.now()}`;
+    const amount = WORKSHOP_CONFIG.TEST_MODE ? 100 : WORKSHOP_CONFIG.price * 100;
 
     // Amount is enforced on server, so browser-side tampering does not change checkout value.
     const order = await razorpay.orders.create({
-      // TEST MODE: charging ₹1 for payment testing
-      amount: 100,
-      currency,
-      receipt,
+      amount,
+      currency: WORKSHOP_CONFIG.currency,
+      receipt: "workshop_order",
     });
 
     res.status(200).json({
