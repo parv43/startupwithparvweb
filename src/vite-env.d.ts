@@ -1,13 +1,33 @@
 /// <reference types="vite/client" />
 
+interface ImportMetaEnv {
+  readonly VITE_RAZORPAY_KEY_ID?: string;
+  readonly VITE_API_BASE_URL?: string;
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv;
+}
+
+interface RazorpayHandlerResponse {
+  razorpay_payment_id?: string;
+  razorpay_order_id?: string;
+  razorpay_signature?: string;
+}
+
 interface RazorpayOptions {
   key: string;
   amount: number;
   currency: string;
+  order_id: string;
   name: string;
   description: string;
   image?: string;
-  handler?: () => void;
+  notes?: Record<string, string>;
+  handler?: (response: RazorpayHandlerResponse) => void | Promise<void>;
+  retry?: {
+    enabled?: boolean;
+  };
   modal?: {
     ondismiss?: () => void;
   };

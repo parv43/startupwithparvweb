@@ -11,38 +11,91 @@ import WorkshopDetails from "./components/WorkshopDetails";
 type RegistrationDetails = {
   fullName: string;
   email: string;
-  phone: string;
-  city: string;
+  whatsapp: string;
+  location: string;
 };
 
 function App() {
   const [paymentSuccess, setPaymentSuccess] = React.useState(false);
 
-  const openMockRazorpay = React.useCallback((details: RegistrationDetails) => {
-    const onSuccess = () => setPaymentSuccess(true);
+  const openMockRazorpay = React.useCallback(async (details: RegistrationDetails) => {
+    const keyId = import.meta.env.VITE_RAZORPAY_KEY_ID;
+    const apiBase = import.meta.env.VITE_API_BASE_URL ?? "";
 
     if (!window.Razorpay) {
-      window.setTimeout(onSuccess, 700);
-      return;
+      throw new Error("Razorpay SDK not loaded");
     }
 
-    const options = {
-      key: "rzp_test_1234567890",
-      amount: 9900,
-      currency: "INR",
+    if (!keyId) {
+      throw new Error("Missing VITE_RAZORPAY_KEY_ID");
+    }
+
+    const createOrderResponse = await fetch(`${apiBase}/api/create-order`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        amount: 9900,
+        currency: "INR",
+      }),
+    });
+
+    if (!createOrderResponse.ok) {
+      throw new Error("Unable to create payment order");
+    }
+
+    const orderPayload: { orderId: string; amount: number; currency: string } =
+      await createOrderResponse.json();
+
+    const options: RazorpayOptions = {
+      key: import.meta.env.VITE_RAZORPAY_KEY_ID as string,
+      amount: orderPayload.amount,
+      currency: orderPayload.currency,
+      order_id: orderPayload.orderId,
       name: "Parv Srivastava",
       description: "Entrepreneurship Workshop",
+      notes: {
+        location: details.location,
+      },
+      prefill: {
+        name: details.fullName,
+        email: details.email,
+        contact: details.whatsapp,
+      },
       theme: {
         color: "#EAB308",
       },
-      handler: onSuccess,
-      modal: {
-        ondismiss: onSuccess,
+      handler: async (response) => {
+        if (!response.razorpay_payment_id || !response.razorpay_order_id || !response.razorpay_signature) {
+          return;
+        }
+
+        try {
+          const verifyResponse = await fetch(`${apiBase}/api/verify-payment`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(response),
+          });
+
+          if (!verifyResponse.ok) {
+            throw new Error("Payment verification failed");
+          }
+
+          const verification: { verified: boolean } = await verifyResponse.json();
+
+          if (!verification.verified) {
+            throw new Error("Invalid payment signature");
+          }
+
+          setPaymentSuccess(true);
+        } catch (error) {
+          console.error("Payment verification error", error);
+        }
       },
-      prefill: {
-        name: details.fullName || "Founder",
-        email: details.email,
-        contact: details.phone,
+      retry: {
+        enabled: true,
+      },
+      modal: {
+        ondismiss: () => undefined,
       },
     };
 

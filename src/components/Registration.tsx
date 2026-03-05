@@ -5,12 +5,12 @@ import { useState, type FormEvent } from "react";
 type RegistrationDetails = {
   fullName: string;
   email: string;
-  phone: string;
-  city: string;
+  whatsapp: string;
+  location: string;
 };
 
 type RegistrationProps = {
-  onRegister: (details: RegistrationDetails) => void;
+  onRegister: (details: RegistrationDetails) => Promise<void>;
 };
 
 const reveal = {
@@ -38,17 +38,17 @@ const fieldConfig = [
     inputMode: "email",
   },
   {
-    key: "phone",
-    label: "Phone",
-    placeholder: "Enter your phone number",
+    key: "whatsapp",
+    label: "WhatsApp Number",
+    placeholder: "Enter your WhatsApp number",
     icon: Phone,
     type: "tel",
     inputMode: "tel",
   },
   {
-    key: "city",
-    label: "City",
-    placeholder: "Enter your city",
+    key: "location",
+    label: "Location (State/City)",
+    placeholder: "Enter your state and city",
     icon: MapPin,
     type: "text",
     inputMode: "text",
@@ -60,13 +60,27 @@ function Registration({ onRegister }: RegistrationProps) {
   const [formData, setFormData] = useState<RegistrationDetails>({
     fullName: "",
     email: "",
-    phone: "",
-    city: "",
+    whatsapp: "",
+    location: "",
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const isFormValid = Object.values(formData).every((value) => value.trim().length > 0);
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    onRegister(formData);
+    if (!isFormValid) return;
+
+    setIsSubmitting(true);
+    setSubmitError(null);
+    try {
+      await onRegister(formData);
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : "Unable to start payment");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -141,7 +155,10 @@ function Registration({ onRegister }: RegistrationProps) {
                 </div>
                 <button
                   type="button"
-                  onClick={() => setShowForm(false)}
+                  onClick={() => {
+                    setShowForm(false);
+                    setSubmitError(null);
+                  }}
                   className="rounded-xl border border-white/10 bg-white/5 p-2 text-white/70 transition hover:text-white"
                   aria-label="Close registration form"
                 >
@@ -181,13 +198,19 @@ function Registration({ onRegister }: RegistrationProps) {
 
               <motion.button
                 type="submit"
-                whileHover={{ scale: 1.02, y: -4 }}
+                whileHover={!isFormValid || isSubmitting ? undefined : { scale: 1.02, y: -4 }}
                 whileTap={{ scale: 0.99 }}
                 transition={{ type: "spring", stiffness: 220, damping: 18 }}
-                className="mt-8 w-full rounded-2xl bg-yellow-500 py-5 text-center text-base font-bold text-black shadow-lg"
+                disabled={!isFormValid || isSubmitting}
+                aria-disabled={!isFormValid || isSubmitting}
+                className="mt-8 w-full rounded-2xl bg-yellow-500 py-5 text-center text-base font-bold text-black shadow-lg disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Proceed To Payment
+                {isSubmitting ? "Processing..." : "Proceed To Payment"}
               </motion.button>
+
+              {submitError ? (
+                <p className="mt-3 text-sm text-red-300">{submitError}</p>
+              ) : null}
             </motion.form>
           )}
         </AnimatePresence>
