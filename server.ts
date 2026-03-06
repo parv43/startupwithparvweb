@@ -9,7 +9,6 @@ dotenv.config();
 
 const app = express();
 const port = Number(process.env.PORT ?? 8787);
-const frontendUrl = process.env.FRONTEND_URL;
 
 const razorpayKeyId = process.env.RAZORPAY_KEY_ID;
 const razorpayKeySecret = process.env.RAZORPAY_KEY_SECRET;
@@ -26,17 +25,14 @@ const razorpay = new Razorpay({
 const allowedOrigins = [
   "http://localhost:5173",
   "https://startupwithparvweb.vercel.app",
-  frontendUrl,
-].filter(Boolean) as string[];
+];
 
 const corsOptions: CorsOptions = {
   origin: (origin, callback) => {
-    // Allow non-browser tools and same-origin calls without Origin header.
     if (!origin) {
       callback(null, true);
       return;
     }
-
     const isAllowed =
       allowedOrigins.includes(origin) || origin.endsWith(".vercel.app");
 
@@ -44,7 +40,6 @@ const corsOptions: CorsOptions = {
       callback(null, true);
       return;
     }
-
     callback(new Error(`CORS blocked for origin: ${origin}`));
   },
   methods: ["GET", "POST", "OPTIONS"],
@@ -61,7 +56,6 @@ app.post("/api/create-order", async (req, res) => {
   try {
     const amount = WORKSHOP_CONFIG.TEST_MODE ? 100 : WORKSHOP_CONFIG.price * 100;
 
-    // Amount is enforced on server, so browser-side tampering does not change checkout value.
     const order = await razorpay.orders.create({
       amount,
       currency: WORKSHOP_CONFIG.currency,
