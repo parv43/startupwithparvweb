@@ -4,12 +4,13 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "dev:server": "tsx watch server.ts",
-    "build": "tsc -b && vite build",
-    "build:server": "tsc --noEmit",
-    "preview": "vite preview"
-  },
+  "dev": "vite",
+  "dev:server": "tsx watch server.ts",
+  "build": "tsc -b && vite build",
+  "build:server": "tsc --noEmit",
+  "preview": "vite preview",
+  "start": "node server.ts"
+},
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
