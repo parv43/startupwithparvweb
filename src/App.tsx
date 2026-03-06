@@ -20,7 +20,6 @@ function App() {
 
   const openMockRazorpay = React.useCallback(async (details: RegistrationDetails) => {
     const keyId = import.meta.env.VITE_RAZORPAY_KEY_ID;
-    const apiBase = import.meta.env.VITE_API_BASE_URL ?? "";
 
     if (!window.Razorpay) {
       throw new Error("Razorpay SDK not loaded");
@@ -30,7 +29,7 @@ function App() {
       throw new Error("Missing VITE_RAZORPAY_KEY_ID");
     }
 
-    const createOrderResponse = await fetch(`${apiBase}/api/create-order`, {
+    const createOrderResponse = await fetch("/api/create-order", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -68,28 +67,7 @@ function App() {
         if (!response.razorpay_payment_id || !response.razorpay_order_id || !response.razorpay_signature) {
           return;
         }
-
-        try {
-          const verifyResponse = await fetch(`${apiBase}/api/verify-payment`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(response),
-          });
-
-          if (!verifyResponse.ok) {
-            throw new Error("Payment verification failed");
-          }
-
-          const verification: { verified: boolean } = await verifyResponse.json();
-
-          if (!verification.verified) {
-            throw new Error("Invalid payment signature");
-          }
-
-          setPaymentSuccess(true);
-        } catch (error) {
-          console.error("Payment verification error", error);
-        }
+        setPaymentSuccess(true);
       },
       retry: {
         enabled: true,
