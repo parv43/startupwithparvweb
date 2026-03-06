@@ -9,7 +9,7 @@
   "build": "tsc -b && vite build",
   "build:server": "tsc --noEmit",
   "preview": "vite preview",
-  "start": "node server.ts"
+  "start": "npx tsx server.ts"
 },
   "dependencies": {
     "cors": "^2.8.5",
