@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import cors from "cors";
+import cors, { type CorsOptions } from "cors";
 import dotenv from "dotenv";
 import express from "express";
 import Razorpay from "razorpay";
@@ -9,6 +9,7 @@ dotenv.config();
 
 const app = express();
 const port = Number(process.env.PORT ?? 8787);
+const frontendUrl = process.env.FRONTEND_URL;
 
 const razorpayKeyId = process.env.RAZORPAY_KEY_ID;
 const razorpayKeySecret = process.env.RAZORPAY_KEY_SECRET;
@@ -22,7 +23,38 @@ const razorpay = new Razorpay({
   key_secret: razorpayKeySecret,
 });
 
-app.use(cors({ origin: true }));
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://startupwithparvweb.vercel.app",
+  frontendUrl,
+].filter(Boolean) as string[];
+
+const corsOptions: CorsOptions = {
+  origin: (origin, callback) => {
+    // Allow non-browser tools and same-origin calls without Origin header.
+    if (!origin) {
+      callback(null, true);
+      return;
+    }
+
+    const isAllowed =
+      allowedOrigins.includes(origin) || origin.endsWith(".vercel.app");
+
+    if (isAllowed) {
+      callback(null, true);
+      return;
+    }
+
+    callback(new Error(`CORS blocked for origin: ${origin}`));
+  },
+  methods: ["GET", "POST", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+  optionsSuccessStatus: 200,
+};
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 app.use(express.json());
 
 app.post("/api/create-order", async (req, res) => {
