@@ -3,7 +3,7 @@ import cors, { type CorsOptions } from "cors";
 import dotenv from "dotenv";
 import express from "express";
 import Razorpay from "razorpay";
-import { WORKSHOP_CONFIG } from "./src/config/workshop";
+import { WORKSHOP_CONFIG } from "./src/config/workshop.ts";
 
 dotenv.config();
 
@@ -107,6 +107,6 @@ app.post("/api/verify-payment", (req, res) => {
   }
 });
 
-app.listen(port, () => {
-  console.log(`Razorpay backend running on http://localhost:${port}`);
+app.listen(port, "0.0.0.0", () => {
+  console.log(`Server running on port ${port}`);
 });
