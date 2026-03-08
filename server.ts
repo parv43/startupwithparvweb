@@ -28,7 +28,7 @@ app.use(express.json());
 
 app.post("/api/create-order", async (req, res) => {
   try {
-    const amount = WORKSHOP_CONFIG.TEST_MODE ? 100 : WORKSHOP_CONFIG.price * 100;
+    const amount = WORKSHOP_CONFIG.TEST_MODE ? 9900 : WORKSHOP_CONFIG.price * 100;
 
     const order = await razorpay.orders.create({
       amount,
@@ -135,7 +135,7 @@ app.listen(port, "0.0.0.0", () => {
 
 // app.post("/api/create-order", async (req, res) => {
 //   try {
-//     const amount = WORKSHOP_CONFIG.TEST_MODE ? 100 : WORKSHOP_CONFIG.price * 100;
+//     const amount = WORKSHOP_CONFIG.TEST_MODE ? 9900 : WORKSHOP_CONFIG.price * 100;
 
 //     const order = await razorpay.orders.create({
 //       amount,
