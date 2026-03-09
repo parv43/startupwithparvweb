@@ -18,7 +18,7 @@ export default async function handler(req: any, res: any) {
       key_secret: keySecret,
     });
 
-    const amount = 9900; // Rs. 99 test payment
+    const amount = 100; // Rs. 1 test payment
 
     const order = await razorpay.orders.create({
       amount,
