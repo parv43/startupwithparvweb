@@ -20,6 +20,8 @@ function App() {
 
   const openMockRazorpay = React.useCallback(async (details: RegistrationDetails) => {
     const keyId = import.meta.env.VITE_RAZORPAY_KEY_ID;
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim() ?? "";
+    const createOrderUrl = apiBaseUrl ? `${apiBaseUrl}/api/create-order` : "/api/create-order";
 
     if (!window.Razorpay) {
       throw new Error("Razorpay SDK not loaded");
@@ -29,7 +31,7 @@ function App() {
       throw new Error("Missing VITE_RAZORPAY_KEY_ID");
     }
 
-    const createOrderResponse = await fetch("/api/create-order", {
+    const createOrderResponse = await fetch(createOrderUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(details),
@@ -37,6 +39,7 @@ function App() {
 
     if (!createOrderResponse.ok) {
       let message = "Unable to create payment order";
+      const responseClone = createOrderResponse.clone();
       try {
         const errorPayload = (await createOrderResponse.json()) as { error?: string; details?: string };
         if (typeof errorPayload.error === "string" && errorPayload.error.trim().length > 0) {
@@ -46,7 +49,10 @@ function App() {
           message = `${message}: ${errorPayload.details}`;
         }
       } catch {
-        // Ignore JSON parse issues and keep fallback message.
+        const text = await responseClone.text();
+        if (text.trim().length > 0) {
+          message = `${message} (HTTP ${createOrderResponse.status}): ${text.slice(0, 180)}`;
+        }
       }
       throw new Error(message);
     }
