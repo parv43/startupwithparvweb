@@ -13,8 +13,8 @@ const port = Number(process.env.PORT ?? 8787);
 
 const razorpayKeyId = process.env.RAZORPAY_KEY_ID;
 const razorpayKeySecret = process.env.RAZORPAY_KEY_SECRET;
-const mongoUri = process.env.MONGODB_URI;
-const mongoDbName = process.env.MONGODB_DB_NAME ?? "startupwithparv";
+const rawMongoUri = process.env.MONGODB_URI;
+const mongoDbNameFromEnv = process.env.MONGODB_DB_NAME;
 
 type RegistrationDetails = {
   fullName: string;
@@ -47,13 +47,34 @@ function parseRegistrationDetails(payload: unknown): RegistrationDetails | null 
   };
 }
 
+function resolveMongoConfig(rawUri: string, envDbName?: string): { uri: string; dbName: string } {
+  const dbNameFromEnv = envDbName?.trim();
+  const parsedUri = new URL(rawUri);
+  const dbNameFromUri = parsedUri.pathname.replace(/^\//, "").trim();
+  const dbName = dbNameFromEnv || dbNameFromUri || "startupwithparv";
+
+  if (!dbNameFromUri) {
+    parsedUri.pathname = `/${dbName}`;
+  }
+  if (!parsedUri.searchParams.has("retryWrites")) {
+    parsedUri.searchParams.set("retryWrites", "true");
+  }
+  if (!parsedUri.searchParams.has("w")) {
+    parsedUri.searchParams.set("w", "majority");
+  }
+
+  return { uri: parsedUri.toString(), dbName };
+}
+
 if (!razorpayKeyId || !razorpayKeySecret) {
   throw new Error("Missing Razorpay credentials. Set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET.");
 }
 
-if (!mongoUri) {
+if (!rawMongoUri) {
   throw new Error("Missing MongoDB connection string. Set MONGODB_URI.");
 }
+
+const mongoConfig = resolveMongoConfig(rawMongoUri, mongoDbNameFromEnv);
 
 const razorpay = new Razorpay({
   key_id: razorpayKeyId,
@@ -80,11 +101,11 @@ app.post("/api/create-order", async (req, res) => {
       receipt: "workshop_order",
     });
 
-    const mongoClient = new MongoClient(mongoUri);
+    const mongoClient = new MongoClient(mongoConfig.uri);
     try {
       await mongoClient.connect();
       await mongoClient
-        .db(mongoDbName)
+        .db(mongoConfig.dbName)
         .collection("registrations")
         .insertOne({
           ...registrationDetails,

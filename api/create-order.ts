@@ -32,6 +32,25 @@ function parseRegistrationDetails(payload: unknown): RegistrationDetails | null 
   };
 }
 
+function resolveMongoConfig(rawMongoUri: string, envDbName?: string): { uri: string; dbName: string } {
+  const dbNameFromEnv = envDbName?.trim();
+  const parsedUri = new URL(rawMongoUri);
+  const dbNameFromUri = parsedUri.pathname.replace(/^\//, "").trim();
+  const dbName = dbNameFromEnv || dbNameFromUri || "startupwithparv";
+
+  if (!dbNameFromUri) {
+    parsedUri.pathname = `/${dbName}`;
+  }
+  if (!parsedUri.searchParams.has("retryWrites")) {
+    parsedUri.searchParams.set("retryWrites", "true");
+  }
+  if (!parsedUri.searchParams.has("w")) {
+    parsedUri.searchParams.set("w", "majority");
+  }
+
+  return { uri: parsedUri.toString(), dbName };
+}
+
 export default async function handler(req: any, res: any) {
   if (req.method !== "POST") {
     return res.status(405).json({ message: "Method not allowed" });
@@ -45,22 +64,24 @@ export default async function handler(req: any, res: any) {
 
     const keyId = process.env.RAZORPAY_KEY_ID;
     const keySecret = process.env.RAZORPAY_KEY_SECRET;
-    const mongoUri = process.env.MONGODB_URI;
-    const mongoDbName = process.env.MONGODB_DB_NAME ?? "startupwithparv";
+    const rawMongoUri = process.env.MONGODB_URI;
+    const mongoDbNameFromEnv = process.env.MONGODB_DB_NAME;
 
     if (!keyId || !keySecret) {
       return res.status(500).json({ error: "Missing Razorpay credentials" });
     }
 
-    if (!mongoUri) {
+    if (!rawMongoUri) {
       return res.status(500).json({ error: "Missing MongoDB connection string" });
     }
+
+    const mongoConfig = resolveMongoConfig(rawMongoUri, mongoDbNameFromEnv);
 
     const razorpay = new Razorpay({
       key_id: keyId,
       key_secret: keySecret,
     });
-    const mongoClient = new MongoClient(mongoUri);
+    const mongoClient = new MongoClient(mongoConfig.uri);
 
     const amount = 100;
 
@@ -73,7 +94,7 @@ export default async function handler(req: any, res: any) {
 
       await mongoClient.connect();
       await mongoClient
-        .db(mongoDbName)
+        .db(mongoConfig.dbName)
         .collection("registrations")
         .insertOne({
           ...registrationDetails,
