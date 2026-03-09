@@ -32,10 +32,7 @@ function App() {
     const createOrderResponse = await fetch("/api/create-order", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        amount: 100,
-        currency: "INR",
-      }),
+      body: JSON.stringify(details),
     });
 
     if (!createOrderResponse.ok) {

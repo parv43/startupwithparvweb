@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
+import { MongoClient } from "mongodb";
 import Razorpay from "razorpay";
 import { WORKSHOP_CONFIG } from "./src/config/workshop.ts";
 
@@ -12,9 +13,46 @@ const port = Number(process.env.PORT ?? 8787);
 
 const razorpayKeyId = process.env.RAZORPAY_KEY_ID;
 const razorpayKeySecret = process.env.RAZORPAY_KEY_SECRET;
+const mongoUri = process.env.MONGODB_URI;
+const mongoDbName = process.env.MONGODB_DB_NAME ?? "startupwithparv";
+
+type RegistrationDetails = {
+  fullName: string;
+  email: string;
+  whatsapp: string;
+  location: string;
+};
+
+function isFilledString(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function parseRegistrationDetails(payload: unknown): RegistrationDetails | null {
+  const raw = (payload ?? {}) as Partial<RegistrationDetails>;
+  const { fullName, email, whatsapp, location } = raw;
+  if (
+    !isFilledString(fullName) ||
+    !isFilledString(email) ||
+    !isFilledString(whatsapp) ||
+    !isFilledString(location)
+  ) {
+    return null;
+  }
+
+  return {
+    fullName: fullName.trim(),
+    email: email.trim().toLowerCase(),
+    whatsapp: whatsapp.trim(),
+    location: location.trim(),
+  };
+}
 
 if (!razorpayKeyId || !razorpayKeySecret) {
   throw new Error("Missing Razorpay credentials. Set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET.");
+}
+
+if (!mongoUri) {
+  throw new Error("Missing MongoDB connection string. Set MONGODB_URI.");
 }
 
 const razorpay = new Razorpay({
@@ -28,6 +66,12 @@ app.use(express.json());
 
 app.post("/api/create-order", async (req, res) => {
   try {
+    const registrationDetails = parseRegistrationDetails(req.body);
+    if (!registrationDetails) {
+      res.status(400).json({ error: "Missing registration fields" });
+      return;
+    }
+
     const amount = WORKSHOP_CONFIG.TEST_MODE ? 100 : WORKSHOP_CONFIG.price * 100;
 
     const order = await razorpay.orders.create({
@@ -35,6 +79,25 @@ app.post("/api/create-order", async (req, res) => {
       currency: WORKSHOP_CONFIG.currency,
       receipt: "workshop_order",
     });
+
+    const mongoClient = new MongoClient(mongoUri);
+    try {
+      await mongoClient.connect();
+      await mongoClient
+        .db(mongoDbName)
+        .collection("registrations")
+        .insertOne({
+          ...registrationDetails,
+          orderId: order.id,
+          orderAmount: order.amount,
+          currency: order.currency,
+          paymentStatus: "created",
+          source: "express_server",
+          createdAt: new Date(),
+        });
+    } finally {
+      await mongoClient.close();
+    }
 
     res.status(200).json({
       orderId: order.id,
