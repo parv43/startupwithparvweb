@@ -21,7 +21,8 @@ function App() {
   const openMockRazorpay = React.useCallback(async (details: RegistrationDetails) => {
     const keyId = import.meta.env.VITE_RAZORPAY_KEY_ID;
     const apiBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim() ?? "";
-    const createOrderUrl = apiBaseUrl ? `${apiBaseUrl}/api/create-order` : "/api/create-order";
+    const createOrderUrl =
+      import.meta.env.DEV && apiBaseUrl ? `${apiBaseUrl}/api/create-order` : "/api/create-order";
 
     if (!window.Razorpay) {
       throw new Error("Razorpay SDK not loaded");
