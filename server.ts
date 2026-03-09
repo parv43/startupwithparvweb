@@ -106,7 +106,17 @@ app.post("/api/create-order", async (req, res) => {
     });
   } catch (error) {
     console.error("create-order failed", error);
-    res.status(500).json({ error: "Unable to create order" });
+    const details = error instanceof Error ? error.message : "Unknown error";
+
+    if (/Mongo|SSL|tlsv1|ECONNREFUSED|querySrv/i.test(details)) {
+      res.status(500).json({
+        error: "MongoDB connection failed",
+        details: "Check Atlas IP access list and MONGODB_URI",
+      });
+      return;
+    }
+
+    res.status(500).json({ error: "Unable to create order", details });
   }
 });
 

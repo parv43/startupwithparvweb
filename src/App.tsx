@@ -36,7 +36,19 @@ function App() {
     });
 
     if (!createOrderResponse.ok) {
-      throw new Error("Unable to create payment order");
+      let message = "Unable to create payment order";
+      try {
+        const errorPayload = (await createOrderResponse.json()) as { error?: string; details?: string };
+        if (typeof errorPayload.error === "string" && errorPayload.error.trim().length > 0) {
+          message = errorPayload.error;
+        }
+        if (typeof errorPayload.details === "string" && errorPayload.details.trim().length > 0) {
+          message = `${message}: ${errorPayload.details}`;
+        }
+      } catch {
+        // Ignore JSON parse issues and keep fallback message.
+      }
+      throw new Error(message);
     }
 
     const orderPayload: { orderId: string; amount: number; currency: string } =

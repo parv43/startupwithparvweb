@@ -94,7 +94,16 @@ export default async function handler(req: any, res: any) {
       await mongoClient.close();
     }
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: "Order creation failed" });
+    const details = err instanceof Error ? err.message : "Unknown error";
+    console.error("create-order failed", err);
+
+    if (/Mongo|SSL|tlsv1|ECONNREFUSED|querySrv/i.test(details)) {
+      return res.status(500).json({
+        error: "MongoDB connection failed",
+        details: "Check Atlas IP access list and MONGODB_URI",
+      });
+    }
+
+    return res.status(500).json({ error: "Order creation failed", details });
   }
 }
