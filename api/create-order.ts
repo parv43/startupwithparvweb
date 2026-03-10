@@ -1,6 +1,9 @@
 import crypto from "node:crypto";
 import Razorpay from "razorpay";
-import { WORKSHOP_CONFIG } from "../src/config/workshop.ts";
+
+const WORKSHOP_PRICE_INR = Number(process.env.WORKSHOP_PRICE_INR ?? 2000);
+const WORKSHOP_CURRENCY = process.env.WORKSHOP_CURRENCY?.trim() || "INR";
+const WORKSHOP_TEST_MODE = (process.env.WORKSHOP_TEST_MODE ?? "true").toLowerCase() === "true";
 
 const allowedOrigins = new Set(
   [
@@ -105,11 +108,11 @@ export default async function handler(req: any, res: any) {
       key_secret: keySecret,
     });
 
-    const amount = WORKSHOP_CONFIG.TEST_MODE ? 100 : WORKSHOP_CONFIG.price * 100;
+    const amount = WORKSHOP_TEST_MODE ? 100 : Math.round(WORKSHOP_PRICE_INR * 100);
 
     const order = await razorpay.orders.create({
       amount,
-      currency: WORKSHOP_CONFIG.currency,
+      currency: WORKSHOP_CURRENCY,
       receipt: randomReceipt(),
     });
 
@@ -120,6 +123,7 @@ export default async function handler(req: any, res: any) {
     });
   } catch (err) {
     console.error("create-order failed", err);
-    return res.status(500).json({ error: "Order creation failed" });
+    const details = err instanceof Error ? err.message : "Unknown create-order failure";
+    return res.status(500).json({ error: "Order creation failed", details });
   }
 }
