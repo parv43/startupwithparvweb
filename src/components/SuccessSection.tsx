@@ -17,11 +17,12 @@ function SuccessSection() {
         <h2 className="mt-6 font-serif text-4xl font-bold">🎉 Payment Successful!</h2>
         <p className="mt-3 text-white/70">Your seat for the webinar is confirmed.</p>
         <p className="mt-2 text-white/50">
-          Join the private WhatsApp community below where the webinar link and reminders will be shared.
+          Join the private WhatsApp community, Founder's Session, where webinar links and reminders will
+          be shared.
         </p>
 
         <motion.a
-          href="https://chat.whatsapp.com/EUv0ulCjSbGKjfZ1Nwf11A?mode=gi_t"
+          href="https://chat.whatsapp.com/KAZkzGqyCPDHZSsP4yO7Ou?mode=hq1tcli"
           target="_blank"
           rel="noreferrer"
           whileHover={{ scale: 1.02, y: -4 }}
@@ -29,7 +30,7 @@ function SuccessSection() {
           transition={{ type: "spring", stiffness: 220, damping: 18 }}
           className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#25D366] px-8 py-4 text-lg font-bold text-white"
         >
-          Join Founders Community
+          Join Founder's Session
           <ExternalLink className="h-5 w-5" />
         </motion.a>
       </div>
