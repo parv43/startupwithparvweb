@@ -16,6 +16,7 @@ const processedPayments = new Map<string, number>();
 const RATE_WINDOW_MS = 60 * 1000;
 const RATE_LIMIT_MAX = 40;
 const PROCESSED_PAYMENT_TTL_MS = 24 * 60 * 60 * 1000;
+const VERIFY_WITH_RAZORPAY_API = (process.env.VERIFY_WITH_RAZORPAY_API ?? "false").toLowerCase() === "true";
 
 function setSecurityHeaders(res: any): void {
   res.setHeader("X-Content-Type-Options", "nosniff");
@@ -122,10 +123,9 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    const keyId = process.env.RAZORPAY_KEY_ID;
     const keySecret = process.env.RAZORPAY_KEY_SECRET;
 
-    if (!keyId || !keySecret) {
+    if (!keySecret) {
       return res.status(500).json({ verified: false, error: "Missing Razorpay credentials" });
     }
 
@@ -138,22 +138,29 @@ export default async function handler(req: any, res: any) {
       return res.status(400).json({ verified: false, error: "Invalid payment signature" });
     }
 
-    const razorpay = new Razorpay({
-      key_id: keyId,
-      key_secret: keySecret,
-    });
+    if (VERIFY_WITH_RAZORPAY_API) {
+      const keyId = process.env.RAZORPAY_KEY_ID;
+      if (!keyId) {
+        return res.status(500).json({ verified: false, error: "Missing Razorpay credentials" });
+      }
 
-    const payment = (await razorpay.payments.fetch(razorpay_payment_id)) as {
-      order_id?: string;
-      status?: string;
-    };
+      const razorpay = new Razorpay({
+        key_id: keyId,
+        key_secret: keySecret,
+      });
 
-    if (payment.order_id !== razorpay_order_id) {
-      return res.status(400).json({ verified: false, error: "Order and payment do not match" });
-    }
+      const payment = (await razorpay.payments.fetch(razorpay_payment_id)) as {
+        order_id?: string;
+        status?: string;
+      };
 
-    if (payment.status !== "authorized" && payment.status !== "captured") {
-      return res.status(400).json({ verified: false, error: "Payment is not successful" });
+      if (payment.order_id !== razorpay_order_id) {
+        return res.status(400).json({ verified: false, error: "Order and payment do not match" });
+      }
+
+      if (payment.status !== "authorized" && payment.status !== "captured") {
+        return res.status(400).json({ verified: false, error: "Payment is not successful" });
+      }
     }
 
     processedPayments.set(razorpay_payment_id, Date.now());

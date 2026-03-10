@@ -15,6 +15,8 @@ type RegistrationDetails = {
   location: string;
 };
 
+type PaymentFlowState = "idle" | "verifying" | "success";
+
 async function getResponseMessage(response: Response, fallback: string): Promise<string> {
   const responseClone = response.clone();
 
@@ -36,7 +38,7 @@ async function getResponseMessage(response: Response, fallback: string): Promise
 }
 
 function App() {
-  const [paymentSuccess, setPaymentSuccess] = React.useState(false);
+  const [paymentFlowState, setPaymentFlowState] = React.useState<PaymentFlowState>("idle");
 
   const openMockRazorpay = React.useCallback(async (details: RegistrationDetails) => {
     const keyId = import.meta.env.VITE_RAZORPAY_KEY_ID;
@@ -91,6 +93,8 @@ function App() {
         }
 
         try {
+          setPaymentFlowState("verifying");
+
           const verifyResponse = await fetch(verifyPaymentUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -110,8 +114,9 @@ function App() {
             throw new Error(verifyPayload.error ?? "Payment verification failed");
           }
 
-          setPaymentSuccess(true);
+          setPaymentFlowState("success");
         } catch (error) {
+          setPaymentFlowState("idle");
           console.error("verify-payment failed", error);
           const message =
             error instanceof Error
@@ -135,7 +140,7 @@ function App() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-black text-white">
       <AnimatePresence mode="wait">
-        {paymentSuccess ? (
+        {paymentFlowState === "success" ? (
           <motion.div
             key="success"
             initial={{ opacity: 0, scale: 0.9 }}
@@ -146,6 +151,30 @@ function App() {
           >
             <SuccessSection />
           </motion.div>
+        ) : paymentFlowState === "verifying" ? (
+          <motion.section
+            key="verifying"
+            initial={{ opacity: 0, scale: 0.96 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.04 }}
+            transition={{ type: "spring", stiffness: 60, damping: 15, mass: 1 }}
+            className="flex min-h-screen items-center justify-center px-6 py-24"
+          >
+            <div className="glass w-full max-w-xl rounded-[2.5rem] p-10 text-center sm:p-12">
+              <h2 className="font-serif text-4xl font-bold">Verifying Payment...</h2>
+              <p className="mt-4 text-white/70">
+                Your payment is received. Please wait while we confirm and unlock Founder's Session.
+              </p>
+              <div className="mx-auto mt-8 h-2 w-full overflow-hidden rounded-full bg-white/10">
+                <motion.div
+                  initial={{ x: "-100%" }}
+                  animate={{ x: "100%" }}
+                  transition={{ duration: 1.1, ease: "easeInOut", repeat: Number.POSITIVE_INFINITY }}
+                  className="h-full w-1/3 bg-accent"
+                />
+              </div>
+            </div>
+          </motion.section>
         ) : (
           <motion.div
             key="landing"
