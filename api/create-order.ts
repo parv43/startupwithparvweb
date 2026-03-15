@@ -1,9 +1,9 @@
 import crypto from "node:crypto";
 import Razorpay from "razorpay";
 
-const WORKSHOP_PRICE_INR = Number(process.env.WORKSHOP_PRICE_INR ?? 2000);
+const WORKSHOP_PRICE_INR = Number(process.env.WORKSHOP_PRICE_INR ?? 149);
 const WORKSHOP_CURRENCY = process.env.WORKSHOP_CURRENCY?.trim() || "INR";
-const WORKSHOP_TEST_MODE = (process.env.WORKSHOP_TEST_MODE ?? "true").toLowerCase() === "true";
+const WORKSHOP_TEST_MODE = (process.env.WORKSHOP_TEST_MODE ?? "false").toLowerCase() === "true";
 
 const allowedOrigins = new Set(
   [
@@ -108,7 +108,7 @@ export default async function handler(req: any, res: any) {
       key_secret: keySecret,
     });
 
-    const amount = WORKSHOP_TEST_MODE ? 100 : Math.round(WORKSHOP_PRICE_INR * 100);
+    const amount = Math.round((WORKSHOP_TEST_MODE ? 149 : WORKSHOP_PRICE_INR) * 100);
 
     const order = await razorpay.orders.create({
       amount,

@@ -177,7 +177,7 @@ app.get("/healthz", (_req, res) => {
 
 app.post("/api/create-order", createOrderLimiter, async (_req, res) => {
   try {
-    const amount = WORKSHOP_CONFIG.TEST_MODE ? 100 : WORKSHOP_CONFIG.price * 100;
+    const amount = Math.round((WORKSHOP_CONFIG.TEST_MODE ? 149 : WORKSHOP_CONFIG.price) * 100);
     prunePendingOrders();
 
     const order = await razorpay.orders.create({

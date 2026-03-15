@@ -103,7 +103,7 @@ function Registration({ onRegister }: RegistrationProps) {
 
               <div className="mt-8 rounded-2xl border border-white/10 bg-black/50 p-6">
                 <p className="font-serif text-2xl italic text-zinc-100 sm:text-3xl">
-                  &quot;If you think that ₹99 is more valuable than your idea, then according to my suggestion, you
+                  &quot;If you think that ₹149 is more valuable than your idea, then according to my suggestion, you
                   should not enter entrepreneurship.&quot;
                 </p>
               </div>
@@ -115,7 +115,7 @@ function Registration({ onRegister }: RegistrationProps) {
                 transition={{ type: "spring", stiffness: 220, damping: 18 }}
                 className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-full bg-accent px-8 py-5 text-lg font-bold text-black sm:w-auto sm:px-12 sm:text-xl"
               >
-                REGISTER FOR ₹99
+                REGISTER FOR ₹149
                 <ArrowRight className="h-5 w-5" />
               </motion.button>
 
